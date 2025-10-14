@@ -1,73 +1,22 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Paste Orders → n8n</title>
-  <style>
-    body { font-family: system-ui, Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
-    textarea, button { width: 100%; font-size: 16px; padding: 10px; box-sizing: border-box; }
-    h1 { margin-bottom: 8px; }
-    label { font-weight: 600; margin-top: 18px; display: block; }
-    textarea { height: 360px; }
-    .hint { color: #666; font-size: 13px; margin: 6px 0 0; }
-    .ok { color: #0a7a2a; }
-    .err { color: #b00020; white-space: pre-wrap; }
-  </style>
-</head>
-<body>
-  <h1>Paste Orders → n8n</h1>
-  <div class="hint">Webhook: <code>https://ng-honey.app.n8n.cloud/webhook/paste-orders</code></div>
+<script>
+const WEBHOOK = 'https://ng-honey.app.n8n.cloud/webhook/paste-orders';
 
-  <label for="dump">Paste orders dump</label>
-  <textarea id="dump" placeholder="Paste the Telegram orders here…"></textarea>
+document.querySelector('#send').addEventListener('click', async () => {
+  const text = document.querySelector('#dump').value.trim();
+  if (!text) return;
 
-  <button id="sendBtn" style="margin-top:18px;">Send to n8n</button>
+  try {
+    // No headers, body is plain text -> "simple request" (no preflight)
+    const res = await fetch(WEBHOOK, {
+      method: 'POST',
+      body: text
+    });
 
-  <p id="status" class="hint"></p>
-
-  <script>
-  // Hard-coded Production Webhook URL
-  const WEBHOOK_URL = "https://ng-honey.app.n8n.cloud/webhook/paste-orders";
-
-  async function sendToN8n(evt) {
-    evt.preventDefault();
-
-    const text = document.getElementById('dump').value;
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = '';
-    statusEl.className = 'hint';
-
-    if (!text.trim()) {
-      statusEl.textContent = 'Please paste at least one order.';
-      statusEl.classList.add('err');
-      return;
-    }
-
-    try {
-      const res = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        mode: 'cors',                          // allow CORS in browser
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raw_text: text, source: 'webform' }),
-      });
-
-      // Try to parse JSON response (optional)
-      await res.json().catch(() => null);
-
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-
-      statusEl.textContent = 'Sent to n8n ✅';
-      statusEl.classList.add('ok');
-    } catch (err) {
-      statusEl.textContent =
-        'Network error — check URL/CORS/connectivity.\n' +
-        (err && err.message ? err.message : String(err));
-      statusEl.classList.add('err');
-    }
+    if (!res.ok) throw new Error('n8n returned ' + res.status);
+    alert('Sent to n8n ✅');
+  } catch (e) {
+    console.error(e);
+    alert('Network/CORS error – check n8n is active and using the PRODUCTION URL.');
   }
-
-  document.getElementById('sendBtn').addEventListener('click', sendToN8n);
-  </script>
-</body>
-</html>
+});
+</script>
